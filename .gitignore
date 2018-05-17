@@ -11,3 +11,5 @@
 /app/src/androidTest/
 /app/src/test/
 /.idea/
+/lib/src/androidTest/
+/lib/src/test/
