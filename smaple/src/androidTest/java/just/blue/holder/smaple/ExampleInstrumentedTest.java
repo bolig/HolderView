@@ -1,4 +1,4 @@
-package xz.cn.lib;
+package just.blue.holder.smaple;
 
 import android.content.Context;
 import android.support.test.InstrumentationRegistry;
@@ -21,6 +21,6 @@ public class ExampleInstrumentedTest {
         // Context of the app under test.
         Context appContext = InstrumentationRegistry.getTargetContext();
 
-        assertEquals("xz.cn.lib.test", appContext.getPackageName());
+        assertEquals("just.blue.holder.smaple", appContext.getPackageName());
     }
 }

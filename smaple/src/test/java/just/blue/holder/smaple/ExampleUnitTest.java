@@ -1,4 +1,4 @@
-package xz.cn.lib;
+package just.blue.holder.smaple;
 
 import org.junit.Test;
 
