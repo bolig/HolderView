@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<just.blue.holder.HolderView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/hv_place"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    app:jb_holder_empty="@layout/layout_empty"
+    app:jb_holder_error="@layout/layout_error"
+    app:jb_holder_loading="@layout/layout_loading"
+    app:jb_holder_noNet="@layout/layout_net_miss" />
