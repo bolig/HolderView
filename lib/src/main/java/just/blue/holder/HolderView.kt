@@ -2,11 +2,12 @@ package just.blue.holder
 
 import android.content.Context
 import android.graphics.Color
+import android.os.Handler
 import android.support.annotation.LayoutRes
 import android.util.AttributeSet
 import android.util.Xml
 import android.view.LayoutInflater
-import android.view.View
+import android.view.MotionEvent
 import android.view.ViewGroup
 import android.widget.FrameLayout
 import just.blue.holder.adapter.BaseAdapter
@@ -47,6 +48,8 @@ class HolderView : FrameLayout, IHolderView {
     private var mLoadingLayoutId: Int
     /**[state_netMiss] 显示的View*/
     private var mNoNetworkLayoutId: Int
+
+    private var interceptMotionEvent = false
 
     // 当前正在显示的界面, state_normal和state_content为空
     private var mShowHolder: BaseHolder? = null
@@ -94,7 +97,6 @@ class HolderView : FrameLayout, IHolderView {
     }
 
     override fun onDestroyView() {
-//        mAdapters.clear()
         mAdapterMap.clear()
     }
 
@@ -104,6 +106,10 @@ class HolderView : FrameLayout, IHolderView {
         if (mClearDetached) {
             onDestroyView()
         }
+    }
+
+    override fun dispatchTouchEvent(ev: MotionEvent?): Boolean {
+        return super.dispatchTouchEvent(ev) || interceptMotionEvent
     }
 
     override fun getCurrentState(): Int = mState
@@ -128,8 +134,11 @@ class HolderView : FrameLayout, IHolderView {
             holder = createHolderByAdapter(adapter, layoutId)
             // 检查是否被添加到HolderView
             addChildToParent(holder, lRes)
-
+            // 已adapter为key绑定BaseHolder
             mAdapterMap[adapter] = holder
+            // 获取是否拦截当前显示界面的触摸事件
+            interceptMotionEvent =
+                    adapter.interceptMotionEvent()
 
             // 将验证通过的layoutId绑定到adapter
             adapter.layoutId = layoutId
@@ -142,6 +151,12 @@ class HolderView : FrameLayout, IHolderView {
         mShowHolder.gone()
         mShowHolder = holder
         mShowHolder.show()
+    }
+
+    override fun onFinishInflate() {
+        super.onFinishInflate()
+
+        // TODO: 添加
     }
 
     /**
@@ -173,7 +188,7 @@ class HolderView : FrameLayout, IHolderView {
                         ViewGroup.LayoutParams.MATCH_PARENT))
             }
         } else {
-            if (parent !is HolderView) {
+            if (parent.id !== id) {
                 throw IllegalArgumentException(
                         "Child View, The wrong binding relationship.")
             }
@@ -192,6 +207,7 @@ class HolderView : FrameLayout, IHolderView {
                 mShowHolder = null
 
                 mState = state
+                interceptMotionEvent = false
             }
             else -> {
                 switchLayout(state, NULL_LAYOUT_ID)
@@ -212,6 +228,7 @@ class HolderView : FrameLayout, IHolderView {
         mShowHolder = null
 
         mState = state_content
+        interceptMotionEvent = false
     }
 
     override fun addAdapter(adapter: BaseAdapter<*>) {
@@ -225,19 +242,16 @@ class HolderView : FrameLayout, IHolderView {
     }
 
     override fun removeAdapter(adapter: BaseAdapter<*>) {
-        val holder = mAdapterMap.remove(adapter)
-        if (holder != null) {
-//            adapter.onViewRecycle(
-//                    adapter.state, holder)
-            holder.clear()
-        }
+        mAdapterMap.remove(adapter)?.clear()
     }
 
     private fun findHAByState(state: Int): Pair<BaseAdapter<*>, BaseHolder?> {
         val entries = mAdapterMap.entries
 
         for (entry in entries) {
-            return entry.key to entry.value
+            if (entry.key.checkState(state)) {
+                return entry.key to entry.value
+            }
         }
 
         throw UnknownStateException()

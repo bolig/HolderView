@@ -15,16 +15,16 @@ class MainActivity : BaseActivity() {
         }
     }
 
-//    override fun loadData() {
-//        showLoading()
-//
-//        Handler().postDelayed({
-//            when (rn.nextInt(5)) {
-//                0 -> showError()
-//                1 -> showEmpty()
-//                3 -> showNetMiss()
-//                else -> showContent()
-//            }
-//        }, 2000)
-//    }
+    override fun loadData() {
+        showLoading()
+
+        Handler().postDelayed({
+            when (rn.nextInt(5)) {
+                0 -> showError()
+                1 -> showEmpty()
+                3 -> showNetMiss()
+                else -> showContent()
+            }
+        }, 2000)
+    }
 }

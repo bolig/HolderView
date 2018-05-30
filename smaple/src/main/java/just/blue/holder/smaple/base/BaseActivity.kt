@@ -2,11 +2,13 @@ package just.blue.holder.smaple.base
 
 import android.os.Bundle
 import android.os.PersistableBundle
+import android.support.annotation.LayoutRes
 import android.support.v7.app.AppCompatActivity
 import just.blue.holder.HolderAction
 import just.blue.holder.HolderDelegate
 import just.blue.holder.HolderView
 import just.blue.holder.adapter.BaseAdapter
+import just.blue.holder.adapter.BaseHolder
 import just.blue.holder.smaple.R
 import just.blue.holder.smaple.adapter.RetryAdapter
 
@@ -18,13 +20,12 @@ import just.blue.holder.smaple.adapter.RetryAdapter
  */
 abstract class BaseActivity : AppCompatActivity(), HolderAction {
 
+    protected open var mHolderView: HolderView?
+            by HolderDelegate(R.id.hv_place, onChange = {
+                it.addAdapter(*mHoldAdapters)
+            })
 
-    protected open var mHolderView: HolderView? = null
-//            by HolderDelegate(R.id.hv_place, onChange = {
-//                it.addAdapter(*mHoldAdapters)
-//            })
-
-    private val mHoldAdapters: Array<out BaseAdapter<*>> by lazy {
+    private val mHoldAdapters: Array<out BaseAdapter<BaseHolder>> by lazy {
         val emptyAdapter = createAdapter(HolderView.state_empty)
         val errorAdapter = createAdapter(HolderView.state_error)
         val netMissAdapter = createAdapter(HolderView.state_netMiss)
@@ -47,10 +48,12 @@ abstract class BaseActivity : AppCompatActivity(), HolderAction {
 
     protected open var mFirstLoad = true
 
-    override fun onCreate(savedInstanceState: Bundle?, persistentState: PersistableBundle?) {
-        super.onCreate(savedInstanceState, persistentState)
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
 
-        setContentView(getLayoutId())
+        val layoutId = getLayoutId()
+
+        setContentView(layoutId)
 
         initHolderView()
 
@@ -67,11 +70,12 @@ abstract class BaseActivity : AppCompatActivity(), HolderAction {
         }
     }
 
+    @LayoutRes
+    abstract fun getLayoutId(): Int
+
     abstract fun initView(savedInstanceState: Bundle?)
 
     open fun loadData() {}
-
-    abstract fun getLayoutId(): Int
 
     protected open fun initHolderView() {
 

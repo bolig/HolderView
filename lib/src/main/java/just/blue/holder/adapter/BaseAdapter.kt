@@ -66,7 +66,7 @@ abstract class BaseAdapter<T : BaseHolder>(val state: Int, var layoutId: Int = H
             throw IllegalArgumentException("when not specified layoutId, ")
         }
 
-        return inflater.inflate(layoutId, root)
+        return inflater.inflate(layoutId, root, false)
     }
 
     internal fun onViewConvert(holder: BaseHolder) {
@@ -78,6 +78,8 @@ abstract class BaseAdapter<T : BaseHolder>(val state: Int, var layoutId: Int = H
 
         doViewRecycle(holder as T)
     }
+
+    internal fun interceptMotionEvent() = true
 
     abstract fun doViewConvert(holder: T)
 
