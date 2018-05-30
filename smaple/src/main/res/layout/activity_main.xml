@@ -23,11 +23,6 @@
         android:text="刷新"
         android:textColor="@color/color_retry_btn" />
 
-    <FrameLayout
-        android:layout_width="match_parent"
-        android:layout_height="match_parent">
-
-        <include layout="@layout/layout_holder" />
-    </FrameLayout>
+    <include layout="@layout/layout_holder" />
 
 </RelativeLayout>

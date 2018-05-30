@@ -9,4 +9,5 @@
         <attr name="jb_holder_clear_detached" format="boolean" />
     </declare-styleable>
     <string name="jb_holder_notice">自定义状态View</string>
+    <item name="jb_holder_state_tag" type="id" />
 </resources>

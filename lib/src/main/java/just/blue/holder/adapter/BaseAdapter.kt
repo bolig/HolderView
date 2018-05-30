@@ -47,6 +47,11 @@ abstract class BaseAdapter<T : BaseHolder>(val state: Int, var layoutId: Int = H
             var view = doCreateView(
                     layoutId, root, inflater)
 
+            if (view == root) {
+
+
+            }
+
             holder = BaseHolder(view)
         }
 
@@ -66,7 +71,7 @@ abstract class BaseAdapter<T : BaseHolder>(val state: Int, var layoutId: Int = H
             throw IllegalArgumentException("when not specified layoutId, ")
         }
 
-        return inflater.inflate(layoutId, root, false)
+        return inflater.inflate(layoutId, root)
     }
 
     internal fun onViewConvert(holder: BaseHolder) {

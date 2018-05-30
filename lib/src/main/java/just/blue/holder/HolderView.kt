@@ -9,6 +9,7 @@ import android.util.Xml
 import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.ViewGroup
+import android.view.ViewTreeObserver
 import android.widget.FrameLayout
 import just.blue.holder.adapter.BaseAdapter
 import just.blue.holder.adapter.BaseHolder
@@ -20,7 +21,7 @@ import java.util.*
  * @email: bo.li@cdxzhi.com
  * @desc: 分状态显示
  */
-class HolderView : FrameLayout, IHolderView {
+class HolderView : FrameLayout, IHolderView, ViewTreeObserver.OnGlobalLayoutListener {
 
     companion object {
         const val state_normal = -1
@@ -50,6 +51,7 @@ class HolderView : FrameLayout, IHolderView {
     private var mNoNetworkLayoutId: Int
 
     private var interceptMotionEvent = false
+    private var hasAttachedToWindow: Boolean = false
 
     // 当前正在显示的界面, state_normal和state_content为空
     private var mShowHolder: BaseHolder? = null
@@ -100,14 +102,6 @@ class HolderView : FrameLayout, IHolderView {
         mAdapterMap.clear()
     }
 
-    override fun onDetachedFromWindow() {
-        super.onDetachedFromWindow()
-
-        if (mClearDetached) {
-            onDestroyView()
-        }
-    }
-
     override fun dispatchTouchEvent(ev: MotionEvent?): Boolean {
         return super.dispatchTouchEvent(ev) || interceptMotionEvent
     }
@@ -131,7 +125,16 @@ class HolderView : FrameLayout, IHolderView {
         if (holder == null) {
             val layoutId = getLayoutId(adapter, lRes)
 
+//            if (!hasAttachedToWindow) {
+//                adapter.layoutId = layoutId
+//                mState = state
+//                return
+//            }
+
             holder = createHolderByAdapter(adapter, layoutId)
+
+            checkHolderViewValid(holder)
+
             // 检查是否被添加到HolderView
             addChildToParent(holder, lRes)
             // 已adapter为key绑定BaseHolder
@@ -153,6 +156,53 @@ class HolderView : FrameLayout, IHolderView {
         mShowHolder.show()
     }
 
+    private fun checkHolderViewValid(holder: BaseHolder) {
+        val view = holder.contentView
+
+        if (view == this) {
+
+            for (entry in mAdapterMap) {
+
+            }
+        }
+    }
+
+    override fun onAttachedToWindow() {
+        super.onAttachedToWindow()
+
+//        if (!hasAttachedToWindow) {
+//            hasAttachedToWindow = true
+//
+//            if (mState != state_normal) {
+//                switchLayout(mState, NULL_LAYOUT_ID, true)
+//            }
+//        }
+    }
+
+    override fun onDetachedFromWindow() {
+
+//        rmOnParentLayout(this)
+
+        if (mClearDetached) {
+            onDestroyView()
+        }
+
+        super.onDetachedFromWindow()
+    }
+
+    override fun onGlobalLayout() {
+//        val p = this.parent
+//        if (p is ViewGroup) {
+//            val count = p.childCount
+//
+//            if (mLastParentChildCount != count) {
+//                mLastParentChildCount = count
+//
+//                bringToFront()
+//            }
+//        }
+    }
+
     override fun onFinishInflate() {
         super.onFinishInflate()
 
@@ -168,31 +218,19 @@ class HolderView : FrameLayout, IHolderView {
      * @param holder
      */
     private fun addChildToParent(holder: BaseHolder, lRes: Int) {
-        val child = holder.contentView
+//        holder.contentView == this.if
         val parent = holder.getParent()
 
-        if (parent == null) {
-            if (lRes.validLayout()) {
-                try {
-                    val parser = context.resources.getLayout(lRes)
-
-                    val attrs = Xml.asAttributeSet(parser)
-
-                    addView(child, generateLayoutParams(attrs))
-                } catch (e: Throwable) {
-                    addChildToParent(holder, NULL_LAYOUT_ID)
-                }
-            } else {
-                addView(child, ViewGroup.LayoutParams(
-                        ViewGroup.LayoutParams.MATCH_PARENT,
-                        ViewGroup.LayoutParams.MATCH_PARENT))
-            }
-        } else {
-            if (parent.id !== id) {
-                throw IllegalArgumentException(
-                        "Child View, The wrong binding relationship.")
-            }
-        }
+//        if (parent == null) {
+//            addView(child, ViewGroup.LayoutParams(
+//                    ViewGroup.LayoutParams.MATCH_PARENT,
+//                    ViewGroup.LayoutParams.MATCH_PARENT))
+//        } else {
+//            if (parent.id !== id && child.id !== id) {
+//                throw IllegalArgumentException(
+//                        "Child View, The wrong binding relationship.")
+//            }
+//        }
     }
 
     override fun showByState(state: Int) {
