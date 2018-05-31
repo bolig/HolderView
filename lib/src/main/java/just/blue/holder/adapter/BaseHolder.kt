@@ -13,9 +13,11 @@ import just.blue.holder.HolderView
  * @email: bo.li@cdxzhi.com
  * @desc:
  */
-class BaseHolder(val contentView: View) {
+class BaseHolder(var contentView: View) {
 
-    private val mViewCache: SparseArray<View?> = SparseArray()
+    private var state = -1
+    private val mViewCache =
+            SparseArray<View?>()
 
     fun <T : View> getView(@IdRes resId: Int): T {
         val view = mViewCache.get(resId)
@@ -32,6 +34,11 @@ class BaseHolder(val contentView: View) {
                 it as ViewGroup
             } ?: null
 
+    internal fun bindState(state: Int) {
+        this.state = state
+    }
+
+    fun getState(): Int = state
 
     internal fun clear() = mViewCache.clear()
 

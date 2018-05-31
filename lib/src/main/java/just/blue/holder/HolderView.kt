@@ -2,14 +2,9 @@ package just.blue.holder
 
 import android.content.Context
 import android.graphics.Color
-import android.os.Handler
 import android.support.annotation.LayoutRes
 import android.util.AttributeSet
-import android.util.Xml
-import android.view.LayoutInflater
-import android.view.MotionEvent
-import android.view.ViewGroup
-import android.view.ViewTreeObserver
+import android.view.*
 import android.widget.FrameLayout
 import just.blue.holder.adapter.BaseAdapter
 import just.blue.holder.adapter.BaseHolder
@@ -21,7 +16,7 @@ import java.util.*
  * @email: bo.li@cdxzhi.com
  * @desc: 分状态显示
  */
-class HolderView : FrameLayout, IHolderView, ViewTreeObserver.OnGlobalLayoutListener {
+class HolderView : FrameLayout, IHolderView {
 
     companion object {
         const val state_normal = -1
@@ -50,11 +45,12 @@ class HolderView : FrameLayout, IHolderView, ViewTreeObserver.OnGlobalLayoutList
     /**[state_netMiss] 显示的View*/
     private var mNoNetworkLayoutId: Int
 
+    private var limitAddView = true
     private var interceptMotionEvent = false
     private var hasAttachedToWindow: Boolean = false
 
     // 当前正在显示的界面, state_normal和state_content为空
-    private var mShowHolder: BaseHolder? = null
+    private var mAdapt: Pair<BaseAdapter<*>, BaseHolder>? = null
 
     // 状态View的缓存
     private val mAdapterMap by lazy {
@@ -125,15 +121,20 @@ class HolderView : FrameLayout, IHolderView, ViewTreeObserver.OnGlobalLayoutList
         if (holder == null) {
             val layoutId = getLayoutId(adapter, lRes)
 
-//            if (!hasAttachedToWindow) {
-//                adapter.layoutId = layoutId
-//                mState = state
-//                return
-//            }
+            if (!hasAttachedToWindow) {
+                adapter.layoutId = layoutId
+                mState = state
+                return
+            }
+
+            limitAddView = false
 
             holder = createHolderByAdapter(adapter, layoutId)
+            holder.bindState(state)
 
-            checkHolderViewValid(holder)
+            limitAddView = true
+
+            tryBindActualChildView(holder)
 
             // 检查是否被添加到HolderView
             addChildToParent(holder, lRes)
@@ -151,56 +152,94 @@ class HolderView : FrameLayout, IHolderView, ViewTreeObserver.OnGlobalLayoutList
 
         mState = state
 
-        mShowHolder.gone()
-        mShowHolder = holder
-        mShowHolder.show()
+        onPerformTransition(adapter, holder)
     }
 
-    private fun checkHolderViewValid(holder: BaseHolder) {
-        val view = holder.contentView
+    private fun onPerformTransition(adapter: BaseAdapter<*>, holder: BaseHolder) {
+        if (mAdapt != null) {
+            val (la, lh) = mAdapt!!
 
-        if (view == this) {
 
-            for (entry in mAdapterMap) {
+        } else {
+            mAdapt.gone()
+            mAdapt = adapter to holder
+            mAdapt.show()
+        }
+    }
 
+    /**
+     * 尝试判断[LayoutInflater.inflate]中是否指定attachToRoot=true, 如为true
+     * 这会使inflate返回inflate中指定的root View(这里即[HolderView]), 从而导致
+     * 无法获取到真实的child View...
+     *
+     * (注: 此方法旨在解决[LayoutInflater.inflate]指定attachToRoot=true的问题)
+     *
+     * @param holder
+     */
+    private fun tryBindActualChildView(holder: BaseHolder) {
+        var view = holder.contentView
+
+        if (view !== this) return
+
+        val childViews = tryGetAllChildView(true)
+
+        for (child in childViews) {
+            if (!checkViewInAdapter(child)) {
+                if (view === this) {
+                    view = child
+                    break
+                }
             }
         }
+
+        if (view !== this) {
+            holder.contentView = view
+            return
+        }
+
+        throw IllegalAccessException("Cannot" +
+                " confirm the actual Child View, Ensure that " +
+                "you are not passing 'true' to the attachToRoot " +
+                "parameter of LayoutInflater.inflate(..., boolean attachToRoot)")
+    }
+
+    /**
+     * 检查child view是否已经绑定到[BaseHolder]中
+     *
+     * @param child
+     * @return
+     */
+    private fun checkViewInAdapter(child: View): Boolean {
+        val holders = mAdapterMap.values
+        for (holder in holders) {
+            holder?.let {
+                val cv = it.contentView
+                if (cv === child) {
+                    return true
+                }
+            }
+        }
+        return false
     }
 
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()
 
-//        if (!hasAttachedToWindow) {
-//            hasAttachedToWindow = true
-//
-//            if (mState != state_normal) {
-//                switchLayout(mState, NULL_LAYOUT_ID, true)
-//            }
-//        }
+        if (!hasAttachedToWindow) {
+            hasAttachedToWindow = true
+
+            if (mState != state_normal) {
+                switchLayout(mState, NULL_LAYOUT_ID, true)
+            }
+        }
     }
 
     override fun onDetachedFromWindow() {
-
-//        rmOnParentLayout(this)
-
         if (mClearDetached) {
             onDestroyView()
         }
 
         super.onDetachedFromWindow()
-    }
-
-    override fun onGlobalLayout() {
-//        val p = this.parent
-//        if (p is ViewGroup) {
-//            val count = p.childCount
-//
-//            if (mLastParentChildCount != count) {
-//                mLastParentChildCount = count
-//
-//                bringToFront()
-//            }
-//        }
     }
 
     override fun onFinishInflate() {
@@ -218,19 +257,43 @@ class HolderView : FrameLayout, IHolderView, ViewTreeObserver.OnGlobalLayoutList
      * @param holder
      */
     private fun addChildToParent(holder: BaseHolder, lRes: Int) {
-//        holder.contentView == this.if
+        var child = holder.contentView
         val parent = holder.getParent()
 
-//        if (parent == null) {
-//            addView(child, ViewGroup.LayoutParams(
-//                    ViewGroup.LayoutParams.MATCH_PARENT,
-//                    ViewGroup.LayoutParams.MATCH_PARENT))
-//        } else {
-//            if (parent.id !== id && child.id !== id) {
-//                throw IllegalArgumentException(
-//                        "Child View, The wrong binding relationship.")
-//            }
-//        }
+        if (parent == null) {
+            var lp = child.layoutParams
+
+            unlockAndAddView {
+                if (lp != null) {
+                    addView(child)
+                } else {
+                    addView(child, ViewGroup.LayoutParams(
+                            ViewGroup.LayoutParams.MATCH_PARENT,
+                            ViewGroup.LayoutParams.MATCH_PARENT))
+                }
+            }
+        } else {
+            if (parent.id !== id) {
+                throw IllegalArgumentException(
+                        "Child View, The wrong binding relationship.")
+            }
+        }
+    }
+
+    private inline fun unlockAndAddView(block: () -> Unit) {
+        limitAddView = false
+
+        block()
+
+        limitAddView = true
+    }
+
+    override fun addView(child: View?, index: Int, params: ViewGroup.LayoutParams?) {
+        if (limitAddView)
+            throw IllegalAccessException("HolderView. " +
+                    "Active addView is not currently supported")
+
+        super.addView(child, index, params)
     }
 
     override fun showByState(state: Int) {
@@ -241,8 +304,8 @@ class HolderView : FrameLayout, IHolderView, ViewTreeObserver.OnGlobalLayoutList
             state_netMiss -> switchLayout(state_netMiss, mNoNetworkLayoutId)
             state_content -> showContent()
             state_normal -> {
-                mShowHolder.gone()
-                mShowHolder = null
+                mAdapt.gone()
+                mAdapt = null
 
                 mState = state
                 interceptMotionEvent = false
@@ -262,20 +325,26 @@ class HolderView : FrameLayout, IHolderView, ViewTreeObserver.OnGlobalLayoutList
     override fun showNetMiss() = switchLayout(state_netMiss, mNoNetworkLayoutId)
 
     override fun showContent() {
-        mShowHolder.gone()
-        mShowHolder = null
+        mAdapt.gone()
+        mAdapt = null
 
         mState = state_content
         interceptMotionEvent = false
     }
 
     override fun addAdapter(adapter: BaseAdapter<*>) {
+        removeAdapter(adapter)
+
         mAdapterMap[adapter] = null
+
+        if (adapter.checkState(mState)) {
+            notifyViewCreate()
+        }
     }
 
     override fun addAdapter(vararg adapters: BaseAdapter<*>) {
         for (adapter in adapters) {
-            mAdapterMap[adapter] = null
+            addAdapter(adapter)
         }
     }
 

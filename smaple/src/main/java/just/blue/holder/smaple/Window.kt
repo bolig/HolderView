@@ -1,5 +1,6 @@
 package just.blue.holder.smaple
 
+import android.view.View
 import java.util.*
 
 /**
@@ -10,3 +11,19 @@ import java.util.*
  */
 
 internal val rn = Random()
+
+internal val sysTime
+    get() = System.currentTimeMillis()
+
+internal var lastClickTime = sysTime
+
+internal inline infix fun View.doOnClick(crossinline block: (View) -> Unit) {
+    this.setOnClickListener {
+        val time = sysTime
+        if (time - lastClickTime < 300)
+            return@setOnClickListener
+
+        lastClickTime = time
+        block(it)
+    }
+}

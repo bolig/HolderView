@@ -3,7 +3,9 @@ package just.blue.holder
 import android.os.Build
 import android.util.SparseArray
 import android.view.View
+import android.view.ViewGroup
 import android.view.ViewTreeObserver
+import just.blue.holder.adapter.BaseAdapter
 import just.blue.holder.adapter.BaseHolder
 import java.lang.ref.WeakReference
 
@@ -14,15 +16,15 @@ internal inline fun <T> SparseArray<T>.getAndRemove(key: Int): T? {
     return value
 }
 
-internal inline fun BaseHolder?.show() {
+internal inline fun Pair<BaseAdapter<*>, BaseHolder>?.show() {
     if (this != null) {
-        contentView.visibility = View.VISIBLE
+        second.contentView.visibility = View.VISIBLE
     }
 }
 
-internal inline fun BaseHolder?.gone() {
+internal inline fun Pair<BaseAdapter<*>, BaseHolder>?.gone() {
     if (this != null) {
-        contentView.visibility = View.GONE
+        second.contentView.visibility = View.GONE
     }
 }
 
@@ -50,3 +52,18 @@ internal inline fun View.rmOnParentLayout(l: ViewTreeObserver.OnGlobalLayoutList
         }
     }
 }
+
+internal inline fun ViewGroup.tryGetAllChildView(reverse: Boolean = false): Array<View> {
+    val indexEnd = childCount - 1
+
+    return Array(childCount) {
+        val index = if (reverse) {
+            indexEnd - it
+        } else it
+
+        return@Array getChildAt(index)
+    }
+}
+
+internal inline fun isKitKat(): Boolean =
+        Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT

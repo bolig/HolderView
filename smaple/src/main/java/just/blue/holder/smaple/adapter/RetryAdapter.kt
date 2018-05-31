@@ -1,5 +1,6 @@
 package just.blue.holder.smaple.adapter
 
+import android.support.v7.widget.RecyclerView
 import android.widget.TextView
 import just.blue.holder.HolderView
 import just.blue.holder.adapter.BaseAdapter
@@ -25,6 +26,6 @@ abstract class RetryAdapter(state: Int) : BaseAdapter<BaseHolder>(state) {
     abstract fun onRetryEvent()
 
     override fun doViewRecycle(holder: BaseHolder) {
-
+//        RecyclerView.ItemAnimator
     }
 }

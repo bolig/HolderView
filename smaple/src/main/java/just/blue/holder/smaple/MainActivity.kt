@@ -13,6 +13,10 @@ class MainActivity : BaseActivity() {
         btn_refresh.setOnClickListener {
             loadData()
         }
+
+        btn_list doOnClick {
+            ListActivity.start(this)
+        }
     }
 
     override fun loadData() {
