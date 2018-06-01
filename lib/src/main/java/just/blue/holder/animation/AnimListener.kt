@@ -1,4 +1,4 @@
-package just.blue.holder.anime
+package just.blue.holder.animation
 
 /**
  * Created by JustBlue on 2018/5/31.

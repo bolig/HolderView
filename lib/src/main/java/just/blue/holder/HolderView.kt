@@ -2,12 +2,15 @@ package just.blue.holder
 
 import android.content.Context
 import android.graphics.Color
+import android.os.Handler
 import android.support.annotation.LayoutRes
 import android.util.AttributeSet
 import android.view.*
 import android.widget.FrameLayout
 import just.blue.holder.adapter.BaseAdapter
 import just.blue.holder.adapter.BaseHolder
+import just.blue.holder.animation.AnimationInternal
+import just.blue.holder.animation.doOnEnd
 import java.util.*
 
 /**
@@ -16,7 +19,7 @@ import java.util.*
  * @email: bo.li@cdxzhi.com
  * @desc: 分状态显示
  */
-class HolderView : FrameLayout, IHolderView {
+class HolderView : FrameLayout, HolderInternal {
 
     companion object {
         const val state_normal = -1
@@ -33,6 +36,7 @@ class HolderView : FrameLayout, IHolderView {
         LayoutInflater.from(context)
     }
 
+    private var mAnimEnable: Boolean
     private var mViewRecycle: Boolean
     private var mClearDetached: Boolean
 
@@ -75,6 +79,7 @@ class HolderView : FrameLayout, IHolderView {
         mErrorLayoutId = a.getResourceId(R.styleable.jb_holder_view_jb_holder_error, NULL_LAYOUT_ID)
         mLoadingLayoutId = a.getResourceId(R.styleable.jb_holder_view_jb_holder_loading, NULL_LAYOUT_ID)
         mNoNetworkLayoutId = a.getResourceId(R.styleable.jb_holder_view_jb_holder_noNet, NULL_LAYOUT_ID)
+        mAnimEnable = a.getBoolean(R.styleable.jb_holder_view_jb_holder_animation_enable, true)
 
         a.recycle()
 
@@ -152,18 +157,63 @@ class HolderView : FrameLayout, IHolderView {
 
         mState = state
 
-        onPerformTransition(adapter, holder)
+        onPerformTransition(adapter, holder, !force)
     }
 
-    private fun onPerformTransition(adapter: BaseAdapter<*>, holder: BaseHolder) {
-        if (mAdapt != null) {
-            val (la, lh) = mAdapt!!
-
-
-        } else {
+    private fun onPerformTransition(adapter: BaseAdapter<*>, holder: BaseHolder, runAnim: Boolean = true) {
+        if (!mAnimEnable || !runAnim) {
             mAdapt.gone()
             mAdapt = adapter to holder
             mAdapt.show()
+            return
+        }
+
+        if (mAdapt != null) {
+            val (la, lh) = mAdapt!!
+
+            mAdapt = adapter to holder
+
+            val (na, nh) = mAdapt!!
+
+            var exitAnim = la.getHolderTransformAnim(lh, this, false)
+            var enterAnim = na.getHolderTransformAnim(nh, this, true)
+
+            lh.contentView.setVisible(false)
+            nh.contentView.setVisible(true)
+
+            exitAnim.start()
+            enterAnim.start()
+        } else {
+            mAdapt = adapter to holder
+            val (na, nh) = mAdapt!!
+
+//            var enterAnim = na.getHolderTransformAnim(
+//                    nh, this, true)
+            var enterAnim = na.getEnterHolderAnim(holder, this)
+
+            nh.contentView.setVisible(true)
+            enterAnim.start()
+            enterAnim.doOnEnd {
+
+            }
+        }
+    }
+
+    private fun showContentTransition() {
+        if (!mAnimEnable) {
+            mAdapt.gone()
+            mAdapt = null
+            return
+        }
+
+        if (mAdapt != null) {
+            val (adapter, holder) = mAdapt!!
+            mAdapt = null
+
+            val exitAnim = adapter.getExitHolderAnim(holder, this)
+
+            holder.contentView.setVisible(false)
+            exitAnim.start()
         }
     }
 
@@ -240,12 +290,6 @@ class HolderView : FrameLayout, IHolderView {
         }
 
         super.onDetachedFromWindow()
-    }
-
-    override fun onFinishInflate() {
-        super.onFinishInflate()
-
-        // TODO: 添加
     }
 
     /**
@@ -325,11 +369,10 @@ class HolderView : FrameLayout, IHolderView {
     override fun showNetMiss() = switchLayout(state_netMiss, mNoNetworkLayoutId)
 
     override fun showContent() {
-        mAdapt.gone()
-        mAdapt = null
-
         mState = state_content
         interceptMotionEvent = false
+
+        showContentTransition()
     }
 
     override fun addAdapter(adapter: BaseAdapter<*>) {

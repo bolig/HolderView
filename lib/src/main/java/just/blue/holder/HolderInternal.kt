@@ -8,7 +8,7 @@ import just.blue.holder.adapter.BaseAdapter
  * @email: bo.li@cdxzhi.com
  * @desc:
  */
-interface IHolderView : HolderAction {
+internal interface HolderInternal : HolderAction {
 
     /**
      * 获取当前显示状态

@@ -7,12 +7,8 @@ import android.view.View
 import android.view.ViewGroup
 import android.view.animation.Animation
 import android.view.animation.AnimationUtils
-import just.blue.holder.HolderView
-import just.blue.holder.anime.AnimAction
-import just.blue.holder.anime.AnimDelegate
-import just.blue.holder.isKitKat
-import just.blue.holder.runNonNull
-import just.blue.holder.validLayout
+import just.blue.holder.*
+import just.blue.holder.animation.*
 import java.lang.ref.WeakReference
 
 /**
@@ -78,38 +74,71 @@ abstract class BaseAdapter<T : BaseHolder>(val state: Int, var layoutId: Int = H
         return inflater.inflate(layoutId, root, false)
     }
 
-    internal fun getViewAnim(holder: BaseHolder, root: ViewGroup, isEnter: Boolean): AnimAction {
-        val vea = if (isEnter)
-            getViewEnterAnim(holder as T, root)
+    internal fun getHolderTransformAnim(holder: BaseHolder, root: ViewGroup, isEnter: Boolean): AnimAction {
+        val transFormAnim = if (isEnter)
+            createViewEnterAnim(holder as T, root)
                     ?: AnimationUtils.loadAnimation(root.context, android.R.anim.fade_in)
         else
-            getViewExitAnim(holder as T, root)
+            createViewExitAnim(holder as T, root)
                     ?: AnimationUtils.loadAnimation(root.context, android.R.anim.fade_out)
 
-        if (isKitKat() && vea is Transition) {
-            return AnimDelegate.createTransitionAction(root, vea)
+        return wrapInternalAnimation(transFormAnim,
+                root, holder.contentView, isEnter)
+    }
+
+    internal fun getExitHolderAnim(holder: BaseHolder, root: ViewGroup): AnimAction {
+        val contentAnim = createEnterContentAnim(holder as T, root)
+                ?: AnimationUtils.loadAnimation(root.context, R.anim.jb_holder_show_content)
+
+        return wrapInternalAnimation(contentAnim,
+                root, holder.contentView, false)
+    }
+
+    internal fun getEnterHolderAnim(holder: BaseHolder, root: ViewGroup): AnimAction {
+        val contentAnim = createEnterContentAnim(holder as T, root)
+                ?: AnimationUtils.loadAnimation(root.context, R.anim.jb_holder_from_content)
+
+        return wrapInternalAnimation(contentAnim,
+                root, holder.contentView, false)
+    }
+
+    private fun wrapInternalAnimation(anim: Any, root: ViewGroup, target: View, isEnter: Boolean): AnimAction {
+        if (isKitKat() && anim is Transition) {
+            return createTransitionAction(
+                    root, target, anim, isEnter)
         }
 
-        return when (vea) {
-            is Animator -> AnimDelegate.createAnimatorAction(vea)
-            is Animation -> AnimDelegate.createAnimationAction(holder.contentView, vea)
+        return when (anim) {
+            is Animator -> createAnimatorAction(anim)
+            is Animation -> createAnimationAction(target, anim)
 
             else -> throw IllegalArgumentException("only support " +
                     "(Animator, Animation, Transition) anim ")
         }
     }
 
-    protected fun getViewEnterAnim(holder: T, root: ViewGroup): Any? = null
+    /**
+     * 创建一个由当前[BaseHolder.contentView] -> 显示主界面的动画
+     * (即调用[HolderView.showContent], 控制所有holder view不可见,
+     * 显示HolderView覆盖的内容)
+     *
+     *
+     * @param holder
+     * @param root 只能是[HolderView]
+     * @return 返回一个动画执行类(可选: [Animation]、[Animator]、[Transition], 以及他们的子类型)
+     *         返回null时,
+     */
+    protected fun createEnterContentAnim(holder: T, root: ViewGroup): Any? = null
 
-    protected fun getViewExitAnim(holder: T, root: ViewGroup): Any? = null
+    protected fun createViewEnterAnim(holder: T, root: ViewGroup): Any? = null
+
+    protected fun createViewExitAnim(holder: T, root: ViewGroup): Any? = null
 
     internal fun onViewConvert(holder: BaseHolder) {
         doViewConvert(holder as T)
     }
 
     internal fun onViewRecycle(holder: BaseHolder) {
-        // TODO: 释放资源
-
         doViewRecycle(holder as T)
     }
 
